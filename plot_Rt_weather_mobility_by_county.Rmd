@@ -1,0 +1,73 @@
+---
+title: "merge Rt, weather, mobility by county"
+author: "H Qin"
+date: "11/7/2020"
+output: pdf_document
+---
+
+
+```{r}
+# check the consistency of worldmet station coordiation and JHU coordinates
+rm(list=ls())
+library(tidyverse)
+library(reshape2)
+library( ggplot2 )
+
+debug = 1
+inpath = 'county3RWM/'
+outplotpath = 'county3RWM/plots/'
+
+countyfilesRWM = fs::dir_ls( inpath )
+countyfilesRWM = str_subset(countyfilesRWM, "\\.csv") 
+```
+
+
+```{r}
+print(paste("There are",length(countyfilesRWM), " input csv files"  ))
+```
+
+
+```{r}
+tbC = NA
+
+for ( i in 1: length(countyfilesRWM) ) {
+  if (debug>0){
+    print(paste( "i=", i, "  input file is :", countyfilesRWM[i]) )
+  }
+  
+  tbC = read_csv( countyfilesRWM[i] )
+  print( head(tbC) )
+  
+  tbscale = data.frame( scale( tbC[, 2:9] )) 
+  tbscale$date = tbC$date
+  
+  selected_columns = c( "Rt", "air_temp", "GoogleWorkplace",
+                        "dailyCases", "AppleDriving",  "GoogleResidential",
+                        # "dew_point", 
+                        "RH"
+                        )
+
+  df_melt <- melt(tbscale, measure.vars=selected_columns, value.names="Values", varialbe.name="varialbe" )
+
+  myplot <- ggplot(df_melt, aes(x=date, y=value, color=variable)) + stat_smooth(span=0.3)
+  
+  mylocation = gsub("\\.csv", '', countyfilesRWM[i]) 
+  mylocation = gsub( inpath, '',  mylocation) 
+  myplot + ggtitle( mylocation ) + scale_color_manual(values = c("black", "blue", "green","darkgray", "#E7B800", "#FC4E07", "brown"))
+  
+  outplotfile = paste( outplotpath, mylocation, ".pdf", sep='')
+
+  ggsave( outplotfile )
+  if (debug>0){
+    print(paste( "i=", i, " output plots to =", outplotfile  ) )
+  }
+
+} #for loop
+```
+
+Finally 
+```{r}
+print("Well, we reached the last line of the code")
+```
+
+

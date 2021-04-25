@@ -1,0 +1,74 @@
+---
+title: "merge Rt, weather, mobility by county"
+author: "H Qin"
+date: "11/7/2020"
+output: pdf_document
+---
+
+
+```{r}
+# check the consistency of worldmet station coordiation and JHU coordinates
+rm(list=ls())
+library(tidyverse)
+library(reshape2)
+debug = 1
+
+outpath = 'county3RWM/'
+countyfilesRtWeather = fs::dir_ls('counties2/')
+countyfilesRtWeather = str_subset(countyfilesRtWeather, "\\.csv") # there are 1257 files
+
+countyfilesMobility = fs::dir_ls('countyMobility/')
+
+```
+
+Check consistency of county names between Rt and mobility data sets.
+
+
+```{r}
+locationRt = as.character( gsub( 'counties2/', '',countyfilesRtWeather ) )
+locationRt = gsub( "_v2.csv", '', locationRt )
+
+locationM = as.character( gsub( 'countyMobility/', '', countyfilesMobility) )
+locationM = gsub( ".csv", '', locationM)
+
+shared_locations = intersect( locationM,  locationRt)
+
+print(paste("There are",length(shared_locations), " shared locations"  ))
+```
+
+
+```{r}
+debug = 1
+tbM = NA
+tbRtW = NA
+for ( i in 1: length(shared_locations) ) {
+#  i=1
+  if (debug>0){
+    print(paste( "i=", i, " shared location=", shared_locations[i]) )
+    #print( countyfilesMobility[ grep( shared_locations[i], countyfilesMobility) ] )
+    infileM =  countyfilesMobility[ grep( shared_locations[i], countyfilesMobility) ]
+    print(infileM[1])
+
+    #print( countyfilesRtWeather[ grep( shared_locations[i], countyfilesRtWeather ) ] )
+    infileRtWeather = countyfilesRtWeather[ grep( shared_locations[i], countyfilesRtWeather ) ]
+    print(infileRtWeather[1])     
+  }
+  
+  tbRtW = read_csv( infileRtWeather[1] )
+  head(tbRtW)
+  tbM =  readr::read_csv(infileM[1])
+  head(tbM)
+  
+  tbRtWM = merge( tbRtW, tbM, by= c("date") ) 
+  
+  outfilename = paste( outpath, shared_locations[i], ".csv", sep="")
+  print( paste("Output to: ", outfilename))
+  
+  write_csv(tbRtWM, outfilename)
+}
+```
+```{r}
+print("Well, we reached the last line of the code")
+```
+
+

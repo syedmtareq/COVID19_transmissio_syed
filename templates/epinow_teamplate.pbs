@@ -1,0 +1,9 @@
+#!/bin/bash -l
+#$ -S /bin/bash
+#$ -N epinow_jobXYZ
+#$ -V
+#$ -cwd
+. /etc/profile.d/modules.sh
+module load anaconda/5.2.0
+source activate condaR403
+R -f batch_Rt_by_county.R --args XYZ1 XYZ2 1 DATE1 DATE2

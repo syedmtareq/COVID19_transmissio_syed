@@ -1,0 +1,9 @@
+#!/bin/bash -l
+#$ -S /bin/bash
+#$ -N epi_job261
+#$ -V
+#$ -cwd
+. /etc/profile.d/modules.sh
+module load anaconda/5.2.0
+source activate condaR403
+R -f batch_Rt_by_county.R --args 261 261 1 4/1/2020 10/25/2020

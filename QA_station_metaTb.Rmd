@@ -1,0 +1,68 @@
+---
+title: "quality check of meta location table for JHU COVID19 data"
+output: pdf_document
+---
+
+
+```{r}
+# check the consistency of worldmet station coordiation and JHU coordinates
+rm(list=ls())
+library(tidyverse)
+
+metaTb = read_csv("_metaTb_1.csv")
+head(metaTb)
+
+```
+
+
+```{r}
+#summary(metaTb$FIPS)
+# there are places without FIPS 
+metaTb[which(is.na(metaTb$FIPS)), ]
+       
+```
+
+```{r}
+metaTb$LatDelta =  metaTb$Lat - metaTb$latStation
+metaTb$LongDelta = metaTb$Long_ - metaTb$longStation
+metaTb$Delta = sqrt( metaTb$LatDelta* metaTb$LatDelta + metaTb$LongDelta * metaTb$LongDelta )
+
+ggplot( metaTb, aes(x=LatDelta, y=LongDelta)) + geom_point() 
+```
+
+
+```{r}
+ggplot(data=metaTb, aes(x=Delta)) +   geom_histogram()
+```
+
+```{r}
+# 1 degree latitue is about 69 miles, 111 kilometers
+# it seems 0.5 degree is a good cutoff, about 90% quantile
+
+quantile( metaTb$Delta, prob=c(0.05, 0.9, 0.95, 0.97, 0.99))
+
+Deltacutoff = 0.5
+
+metaTb$StationProximity = ifelse( metaTb$Delta >= Deltacutoff, FALSE, TRUE )
+summary(metaTb$StationProximity)
+```
+
+
+```{r}
+summary(metaTb)
+```
+
+```{r}
+metaTb$GoodLocation = metaTb$StationProximity
+metaTb$GoodLocation = ifelse( is.na(metaTb$FIPS) | metaTb$FIPS==999999 | metaTb$station=='BOGUS CHINESE', FALSE,  metaTb$GoodLocation  )
+
+```
+
+```{r}
+metaTb[171,]
+```
+
+```{r}
+write_csv(metaTb, "_metaStation_20201027b.csv")
+```
+

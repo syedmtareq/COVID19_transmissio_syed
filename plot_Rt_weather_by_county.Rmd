@@ -1,0 +1,53 @@
+---
+title: "plot Rt - weather-by-county"
+author: "H Qin"
+date: "11/2/2020"
+output: pdf_document
+---
+
+
+```{r}
+# check the consistency of worldmet station coordiation and JHU coordinates
+rm(list=ls())
+library(tidyverse)
+library(reshape2)
+debug = 1
+countyfiles = fs::dir_ls('counties2/')
+countyfiles = str_subset(countyfiles, "\\.csv") # there are 1257 files
+```
+
+
+```{r}
+for ( i in 1: length(countyfiles)) {
+#for ( i in 1:10 ) {
+  if (debug>0){
+    print(paste( "i=", i, " input file=", countyfiles[i]) )
+  }
+  
+  tbCounty = readr::read_csv( countyfiles[i] )
+  
+  ggplot( tbCounty, aes(x=date, y=Rt)) + geom_point()
+  
+#plot <- ggplot( df_tmp, aes(x=YMD, y=DailyCases, color=Counties) ) + geom_point()
+#plot + stat_smooth(span=0.3)
+
+ tbCounty_scaled = data.frame( scale( tbCounty[, c("Rt", "RH", "air_temp")] ) )
+ tbCounty_scaled$date = tbCounty$date
+  df_tmp <- melt(tbCounty_scaled[, c("date", "Rt", "RH", "air_temp")], measure.vars = c("Rt", "RH", "air_temp"))
+  head(df_tmp)
+  gplot <- ggplot(df_tmp, aes(x=date, y=value, color=variable)) + geom_smooth()
+
+  mylocation = gsub("_v2\\.csv", '', countyfiles[i]) 
+  mylocation = gsub("counties2/", '',  mylocation) 
+  gplot + ggtitle( mylocation )
+  
+  outplotfile = paste( 'counties2/plots/', mylocation, ".pdf", sep='')
+
+  ggsave( outplotfile )
+  if (debug>0){
+    print(paste( "i=", i, " output plots to =", outplotfile  ) )
+  }
+
+}
+```
+

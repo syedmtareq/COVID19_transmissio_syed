@@ -1,0 +1,51 @@
+---
+title: "quality check of county input csv files for EpiNow runs"
+author: "H Qin"
+date: "10/30/2020"
+output: pdf_document
+---
+
+
+```{r}
+# check the consistency of worldmet station coordiation and JHU coordinates
+rm(list=ls())
+library(tidyverse)
+debug = 1
+totalcaseCutoff = 500
+countyfiles = fs::dir_ls('counties/')
+countyfiles = str_subset(countyfiles, "\\.csv") # there are 2242 files 
+```
+
+
+```{r}
+for ( i in 1: length(countyfiles)) {
+#for ( i in 1:10 ) {
+  if (debug>0){
+    print(paste( "i=", i, " input file=", countyfiles[i]) )
+  }
+  
+  tbCounty = readr::read_csv( countyfiles[i] )
+  
+  local_cases = tbCounty[, c("date", "dailyCases")]
+  names( local_cases ) = c("date", "confirm")
+
+  if ( sum(local_cases$confirm) <= totalcaseCutoff )  { #move this to small_cases
+    currentLocation = gsub( '\\.csv', '',  countyfiles[i] )
+    currentLocation = gsub( 'counties/', 'counties/small_cases/',  currentLocation )
+    
+    outfilename = paste( currentLocation, "_toofew.csv", sep='' )
+    write_csv( tbCounty, outfilename )
+  
+    fs::file_delete(countyfiles[i])
+    
+      if (debug> 0) {
+         print( paste( "delete ", countyfiles[i]) )
+         print( paste("mv file to", outfilename) )
+      }
+  }  
+}
+
+
+
+```
+

@@ -1,0 +1,88 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r}
+# check the consistency of worldmet station coordiation and JHU coordinates
+rm(list=ls())
+library(tidyverse)
+library(readr)
+library(EpiNow2)
+#library(ggplot2)
+#library(dplyr)
+library(lubridate)
+```
+
+
+```{r get_jhucovid}
+# parse jhu covid data 
+tb = read_csv(url("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"))
+
+# We need save the data into a new variable 'tb1' so that computer can remember it
+
+tb1 <- tb %>% dplyr::select(12:length(tb[1,])) %>% as.matrix()
+tb1 = as.data.frame(t(tb1)) # t for transpose, then convert to a dataframe
+
+names(tb1) = tb$Combined_Key
+```
+
+
+```{r transpose_n_reformat}
+
+# conver cumulative cases into daily cases
+tb_daily = data.frame( apply(tb1, 2,  diff) ) 
+names(tb_daily) = gsub( '\\.\\.', ', ', names(tb_daily))
+
+tb_daily$date = mdy( row.names(tb_daily) )
+```
+
+
+
+```{r set_hamilton}
+ #tbCounty = readr::read_csv( 'counties/Hamilton, Tennessee, US.csv' )
+ 
+ tbCounty = tb_daily %>% select( "Hamilton, Tennessee, US", "date" )
+```
+
+
+```{r epinow_with_timewindow}
+  local_cases = tbCounty[, c("date", "Hamilton, Tennessee, US")]
+  names( local_cases ) = c("date", "confirm")
+  
+  local_cases <- local_cases %>% dplyr::filter( between(date, mdy('6/1/2020'), mdy('1/19/2021')))
+  local_cases$confirm[  local_cases$confirm < 0 ] = 0
+  
+  reporting_delay <- bootstrapped_dist_fit(rlnorm(100, log(4), 1), max_value = 30)
+  generation_time <- get_generation_time(disease = "SARS-CoV-2", source = "ganyani")
+  incubation_period <- get_incubation_period(disease = "SARS-CoV-2", source = "lauer")
+  
+  #estimates <- epinow(reported_cases = local_cases, samples=100, output='samples',
+  estimates <- epinow(reported_cases = local_cases,  horizon=10,
+                      generation_time = generation_time,
+                      delays = delay_opts(incubation_period, reporting_delay)
+                      )
+  
+   estimates 
+```
+
+```{r}
+summary(estimates, type = "parameters", params = "R")
+```
+
+```{r}
+
+ localRtTb = estimates$estimates$summarised[ estimates$estimates$summarised$variable=='R' , all=TRUE]
+  
+  localRtTb2 <- localRtTb %>% select(date, mean )
+  names( localRtTb2 ) = c( 'date', 'Rt' )
+  
+  tbCounty2 = merge( tbCounty, localRtTb2, by='date', all=TRUE)
+  
+```
+
+
+  
+ 

@@ -1,0 +1,103 @@
+---
+title: "auto_jhu_covid"
+author: "H Qin"
+date: "10/27/2020"
+output: html_document
+---
+
+```{r}
+rm(list=ls())
+library(tidyverse)
+library(lubridate)
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+library(worldmet)
+
+```
+
+```{r}
+# parse jhu covid data 
+tb = read_csv(url("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"))
+
+# We need save the data into a new variable 'tb1' so that computer can remember it
+
+tb1 <- tb %>% dplyr::select(12:length(tb[1,])) %>% as.matrix()
+tb1 = as.data.frame(t(tb1)) # t for transpose, then convert to a dataframe
+
+names(tb1) = tb$Combined_Key
+
+tb1$dates = mdy( names(tb)[12:length(tb[1,])])
+```
+
+
+```{r}
+# load the annoated county meta information with weather stations
+
+metaTb = read_csv("_metaStation_20201027b.csv")
+
+countiesWithGoodWeathherStations = metaTb$Combined_Key[ metaTb$GoodLocation ==TRUE ]
+
+# select columns with good weather stations
+#tb2 = tb1[, countiesWithGoodWeathherStations]
+tb2 <- tb1 %>% select( all_of(countiesWithGoodWeathherStations) ) 
+```
+
+
+```{r}
+# conver cumulative cases into daily cases
+tb_daily = data.frame( apply(tb2, 2,  diff) ) 
+names(tb_daily) = gsub( '\\.\\.', ', ', names(tb_daily))
+```
+
+
+```{r}
+# define some weather utility functions
+get_weather <- function( inLocation, inyear, debug=0 ) {
+  station_code = paste( metaTb$usaf[ metaTb$Combined_Key == inLocation], metaTb$wban[ metaTb$Combined_Key == inLocation], sep='-')
+  if (debug) { print( paste( "station_code = ", station_code)) }
+
+  weather = NA
+  tryCatch(  weather <- importNOAA( code= station_code, year= inyear ), 
+             error=function(e) {
+               return( NA)
+             }
+  )
+  return(weather)
+}
+
+get_daily_average_of_weather <- function ( inWeather ){
+  w <- inWeather %>% dplyr::select( 'date', 'air_temp', 'dew_point', 'RH')
+  w$date = as.Date( w$date )
+  dailyW <-   w %>% group_by( date ) %>% summarise_if( is.numeric, mean, na.rm=TRUE)
+  dailyW
+}
+
+#w = get_weather( names(tb2)[1], 2020)
+#dailyW = get_daily_average_of_weather( w )
+```
+
+```{r}
+# loop over counties, put each county data, weather, mobility in one csv file
+
+#for (i in 1: length(tb_daily[1,])) {
+for (i in 58: length(tb_daily[1,])) {
+  print( paste( "i ==", i,  names(tb_daily)[ i ] ))
+  localCovid = data.frame( tb_daily[, i] )
+  localCovid$date  = mdy(row.names(tb_daily))
+  
+  names( localCovid ) = c("dailyCases", "date") ; 
+  currentCounty = names(tb_daily)[ i ]
+  w = get_weather( currentCounty, 2020, debug=1)
+  if ( ! is.na(w)) {
+    dailyW = get_daily_average_of_weather( w )
+    tb_local=   merge(x=localCovid,  y= dailyW, by= 'date', all.y=FALSE)
+    csvfilename = paste('counties/', currentCounty, ".csv", sep="" )
+    write_csv(tb_local, csvfilename)
+  } else {
+    print( " ** NA weather report ** ")
+    write.table( 1:10,  paste( "counties/", currentCounty, "_error.txt", sep='') )
+  }
+}
+
+```

@@ -1,0 +1,89 @@
+library(urca)
+library(forecast)
+library(tidyverse)
+#install.packages("vars")
+library(vars)
+library(lmtest)
+
+# Loading the Dataset
+
+data_frame = read_csv("https://raw.githubusercontent.com/QinLab/COVID19_transmission_MS/main/county3RWM/Acadia%2C%20Louisiana%2C%20US.csv?token=APMEIZDYFM5QZG4AMN5DE4K72HT6O")
+
+#data_frame <- read_csv("Data_Covid.csv")
+data_frame[is.na(data_frame)] = 0
+data_frame
+# DailyCases were converted into time series data. Since dates were not mentioned in the  Date format (shown as string)
+# Thus general index were used (1 to 248)
+# Declaring time series objects
+dailyCases_ts = ts(data_frame$dailyCases, start = 1, end=248, frequency = 1)
+air_temp_ts = ts(data_frame$air_temp, start = 1, end=248, frequency = 1)
+RH_ts = ts(data_frame$RH, start = 1, end=248, frequency = 1)
+Rt_ts = ts(data_frame$Rt, start = 1, end=248, frequency = 1)
+apple_driving_ts = ts(data_frame$AppleDriving, start = 1, end=248, frequency = 1)
+Google_workplace_ts = ts(data_frame$GoogleWorkplace, start = 1, end=248, frequency = 1)
+Google_residential_ts = ts(data_frame$GoogleResidential, start = 1, end=248, frequency = 1)
+
+
+# Bind into a system 
+system1 = cbind(dailyCases_ts, Rt_ts, air_temp_ts)
+system2 = cbind(dailyCases_ts, RH_ts, apple_driving_ts)
+system3 = cbind(dailyCases_ts, Google_workplace_ts, Google_residential_ts)
+
+# lag selection using VAR technique
+lagselect1 = VARselect(system1, lag.max = 7, type = "const")
+#lagselect1$selection
+K_val1 =strtoi(names(sort(summary(as.factor(lagselect1$selection)), decreasing=T)[1]))-1
+
+if (K_val1<2){
+  K_val1=2
+}
+lagselect2 = VARselect(system2, lag.max = 7, type = "const")
+#lagselect2$selection
+K_val2 =strtoi(names(sort(summary(as.factor(lagselect2$selection)), decreasing=T)[1]))-1
+
+if (K_val2<2){
+  K_val2=2
+}
+
+lagselect3 = VARselect(system3, lag.max = 7, type = "const")
+#lagselect3$selection
+K_val3 =strtoi(names(sort(summary(as.factor(lagselect3$selection)), decreasing=T)[1]))-1
+
+if (K_val3<2){
+  K_val3=2
+}
+
+ 
+
+# Johansen testing(trace)
+
+test1 = ca.jo(system1, type='trace', ecdet = 'const', K=K_val1)
+test2 = ca.jo(system2, type='trace', ecdet = 'const', K=K_val2)
+test3 = ca.jo(system3, type='trace', ecdet = 'const', K=K_val3)
+
+
+summary(test1)
+summary(test2)
+summary(test3)
+
+# Discussion
+# Null hypothesis (r = 0) is rejected as 5 pct value (34.91) < test value (72.91). Thus at least one co-integration relationship exist between daily cases, Rt and air temperature. In the second hypothesis (r=1),value of 5 pct (19.96) < test value(23.92). Therefore, there exist more than 2 co-integration relationship. Since in 3rd hypothesis (r=2), test value (4.76) < 5 pct (9.24), existence of more than 2 co-integration value is invalidated.There are at best 2 co-integration relationship exist. 
+# Null hypothesis (r = 0) is rejected as 5 pct value (34.91) < test value (122.98). Thus at least one co-integration relationship exist between daily cases, RH and apple driving. In the second hypothesis (r=1),value of 5 pct (19.96) < test value(47.26). Therefore, there exist more than 2 co-integration relationship. Since in 3rd hypothesis (r=2), test value (17.51) > 5 pct (9.24), existence of more than 2 co-integration value is validated.There are more than 3 co-integration relationship exist.
+# Null hypothesis (r = 0) is rejected as 5 pct value (34.91) < test value (41.60). Thus at least one co-integration relationship exist between daily cases, Google workplace and Google residential. In the second hypothesis (r=1),value of 5 pct (19.96) > test value(16.66). Therefore, existence of more than 2 co-integration relationship is invalidated. Thus there can be at best 2 co-integration relationship.
+
+# Johansen testing(MaxEigen)
+print("------Eigen value testing----")
+
+test1ei = ca.jo(system1, type='eigen', ecdet = 'const', K=K_val2)
+test2ei = ca.jo(system2, type='eigen', ecdet = 'const', K=K_val3)
+test3ei = ca.jo(system3, type='eigen', ecdet = 'const', K=K_val1)
+
+summary(test1ei)
+summary(test2ei)
+summary(test3ei)
+
+
+# Discussion
+# Null hypothesis (r = 0) is rejected as 5 pct value (22.00) < test value (48.99). Thus at least one co-integration relationship exist between daily cases, Rt and air temperature. In the second hypothesis (r=1),value of 5 pct (15.67) < test value(19.15). Therefore there are more than 2 co-integration relationship exist.
+# Null hypothesis (r = 0) is rejected as 5 pct value (22.00) < test value (38.69). Thus at least one co-integration relationship exist between daily cases, relative humidity and apple driving. In the second hypothesis (r=1),value of 5 pct (15.67) > test value(6.64). Thus existence of more than 2 co-integration relationship is invalidated.  Therefore there exist at most 2 co-integration relationship.
+# Null hypothesis (r = 0) is rejected as 5 pct value (22.00) < test value (72.85). Thus at least one co-integration relationship exist between daily cases, Google workplace and Google residential. In the second hypothesis (r=1),value of 5 pct (15.67) < test value(44.54). Therefore, there exist more than 2 co-integration relationship. Since in 3rd hypothesis (r=2), test value (27.69) > 5 pct (9.24), existence of more than 3 co-integration value is validated.There are more than 3 co-integration relationship exist.

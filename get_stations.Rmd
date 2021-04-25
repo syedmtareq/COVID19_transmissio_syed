@@ -1,0 +1,76 @@
+
+
+```{r}
+# get weather stations for JHU covid19 counties
+#install.packages('reshape2')
+#install.packages("worldmet", lib='/content')
+library(tidyverse)
+library(lubridate)
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+library(worldmet)
+
+```
+
+
+```{r}
+tb = read_csv(url("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"))
+#str(tb.jhu) #this is a tibble
+```
+
+
+```{r}
+# Initialize the meta information table
+metaTb = tb[, 1:11]
+  
+metaTb$latStation = NA
+metaTb$longStation = NA
+metaTb$usaf = NA
+metaTb$wban = NA
+metaTb$station = NA
+head(metaTb)
+```
+
+```{r}
+summary(metaTb)
+```
+
+```{r}
+
+#221	84006051	US	USA	840	6051	Mono	California	US	37.93899289	-118.8872409	Mono, California, US
+getMeta(lat = 37.9, lon = -118.88)
+
+
+```
+
+
+```{r}
+for( i in 1:length(metaTb$Lat)){
+#for( i in 1:2 ){
+
+   tryCatch( info <- getMeta(lat = metaTb$Lat[i], lon = metaTb$Long_[i], plot=FALSE),   
+       error=function(e)  {
+         print( paste( "*** tryCaught error:", metaTb[i, ]) )
+       } 
+    )
+    print(i)
+    #metaTb$latStation[i] = info$latitude[1]
+    #metaTb$longStation[i] = info$longitude[1]
+    #metaTb$usaf[i] = info$usaf[1]
+    #metaTb$wban[i] = info$wban[1]
+    #metaTb$station[i] = info$station[1] 
+  }
+}
+```
+
+
+```{r}
+#head(metaTb, n=10)
+
+```
+
+```{r}
+#write.csv( metaTb, file="_metaTb.csv")
+```
+

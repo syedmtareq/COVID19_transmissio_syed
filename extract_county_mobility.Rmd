@@ -1,0 +1,93 @@
+---
+title: "extract county mobility data"
+author: "H Qin"
+date: "10/27/2020"
+output: html_document
+---
+
+```{r, results='hide'}
+rm(list=ls())
+library(tidyverse)
+library(lubridate)
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+#library(worldmet)
+```
+
+```{r, results='hide', echo=FALSE, message=FALSE, warning=FALSE}
+#system("wget https://www.gstatic.com/covid19/mobility/Region_Mobility_Report_CSVs.zip")
+```
+```{r}
+#dir.create("google_region")
+#system("mv Region_Mobility_Report_CSVs.zip google_region/.")
+#system("unzip Region_Mobility_Report_CSVs.zip -d google_region")
+```
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+tbGMUS = read_csv("google_region/2020_US_Region_Mobility_Report.csv")
+
+vars <- c("sub_region_1", "sub_region_2")
+tbGMUS <-   tbGMUS %>% drop_na( any_of(vars))
+
+tbGMUS$combinedkey = paste( tbGMUS$sub_region_2, tbGMUS$sub_region_1, "US", sep=", " )
+#tbGMUS$combinedkey = gsub( " County", "", tbGMUS$combinedkey)
+```
+
+Google show 2826 counties in USA
+```{r}
+length( unique( tbGMUS$combinedkey ) )
+```
+
+Get APPLE mobility
+```{r}
+files = list.files('apple')
+tbAM = read_csv(paste('apple/', files[1], sep=''))
+
+tbAM <- tbAM %>% filter( country == "United States", geo_type=='county', transportation_type=='driving' )
+head(tbAM)
+```
+
+There are 317 cities and 2638 counties, and 147 sub-regions in the Apple data sets when country=="United States"
+```{r}
+table( tbAM$geo_type )
+```
+
+```{r}
+tbAM$combinedkey = paste( tbAM$region, tbAM$`sub-region`, "US", sep=", ")
+#tbAM$combinedkey  %in% unique( tbGMUS$combinedkey)
+
+shared_combinedkeys = intersect(tbAM$combinedkey,tbGMUS$combinedkey  )
+
+#length( shared_combinedkeys )
+
+print( paste("there are", length( shared_combinedkeys ) , "shared combinedkeys between Apple and Google mobility counties in USA"))
+```
+
+Pick only shared combinedkeys from both Google and Apple data sets
+
+```{r}
+directory = 'countyMobility/'
+
+#for ( c in shared_combinedkeys[1:10] ){
+for ( c in shared_combinedkeys ){
+  print( c )
+  tbAMC <- tbAM %>% filter( tbAM$combinedkey == c)
+  tbAMC = data.frame( t( tbAMC[, 7: (length(tbAM[1,])-1) ] ) ) #last one is the combined key
+  tbAMC$date = ymd( row.names(tbAMC) )
+  names(tbAMC) = c("AppleDriving", "date")
+  
+  tbGMC <- tbGMUS %>% filter( tbGMUS$combinedkey == c ) %>% select( date, workplaces_percent_change_from_baseline, residential_percent_change_from_baseline )
+  names(tbGMC) = c( "date", "GoogleWorkplace", "GoogleResidential")
+  
+  tbAGC = merge(tbAMC, tbGMC,by=c("date"))
+  
+  c = gsub( " County", "", c)
+  c = gsub( " Parish", "", c)
+  outfileName = paste( directory, c, ".csv", sep='')
+  print( paste("Output to: ", outfileName ))
+  write_csv( tbAGC, outfileName )
+}
+
+```
+
