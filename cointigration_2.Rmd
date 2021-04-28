@@ -267,13 +267,16 @@ print(summary(test1))
 
 w = Rt_ts - 0.2585501*air_temp_ts + 5.0689288
 
-xMat <- t(data.matrix(cbind(system1[c(6:3)],ones)))
+xMat <- t(data.matrix(cbind(system1[c(48:248)])))
 beta <- data.matrix(test1@V[,1])
-wt <- t(beta) %*% (xMat) 
-# wt = Y$Rs_ts - (0.2585501)*Y$air_temp_ts + 5.0689288
+wt <- t(xMat) %*% t(beta)
+wt
+t(wt)
+#wt = Y$Rs_ts - (0.2585501)*Y$air_temp_ts + 5.0689288
 plot(t(wt), type="l", main="Stationary Spread Series",
      xlab="Time", ylab="Spread")
-wtAdf <- ur.df(t(wt))
+wt_x = ts(wt)
+wtAdf <- ur.df(as.vector(t(wt)))
 wtAdf@cval
 #      1pct  5pct 10pct
 # tau1 -2.58 -1.95 -1.62
