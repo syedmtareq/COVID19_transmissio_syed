@@ -1,0 +1,420 @@
+---
+title: "Cointegration_2"
+author: "Syed Mohammed Tareq"
+date: "2/26/2021"
+output: html_document
+---
+
+
+```{r}
+
+
+library(urca)
+library(forecast)
+library(tidyverse)
+#install.packages("vars")
+library(vars)
+library(lmtest)
+
+```
+
+
+
+
+```{r}
+
+# Loading the Dataset
+
+#data_frame = read_csv("https://raw.githubusercontent.com/QinLab/COVID19_transmission_MS/main/county3RWM/Acadia%2C%20Louisiana%2C%20US.csv?token=APMEIZDYFM5QZG4AMN5DE4K72HT6O")
+
+data_frame <- read_csv("Data_Covid.csv")
+data_frame[is.na(data_frame)] = 0
+data_frame
+
+
+
+```
+```{r}
+
+# DailyCases were converted into time series data. Since dates were not mentioned in the  Date format (shown as string)
+# Thus general index were used (1 to 248)
+# Declaring time series object
+dailyCases_ts = ts(data_frame$dailyCases, start = 1, end=248, frequency = 1)
+air_temp_ts = ts(data_frame$air_temp, start = 1, end=248, frequency = 1)
+RH_ts = ts(data_frame$RH, start = 1, end=248, frequency = 1)
+Rt_ts = ts(data_frame$Rt, start = 1, end=248, frequency = 1)
+apple_driving_ts = ts(data_frame$AppleDriving, start = 1, end=248, frequency = 1)
+Google_workplace_ts = ts(data_frame$GoogleWorkplace, start = 1, end=248, frequency = 1)
+Google_residential_ts = ts(data_frame$GoogleResidential, start = 1, end=248, frequency = 1)
+
+
+
+```
+
+
+Lag values 
+
+
+2 ~ 10    range of total lag Value
+7 ~ 10    range of lag value  K=  1/4 OF DATE 
+
+
+
+
+# Bind into a system
+
+
+compare : 
+
+Rt_ts : Reproduction No
+air_temp_ts : air temperature 
+
+
+```{r}
+system1 = cbind(Rt_ts, air_temp_ts)
+head(system1)
+
+```
+
+
+compare : 
+
+Rt_ts : Reproduction No
+air_temp_ts : Air temperature 
+
+```{r}
+
+system2 = cbind(Rt_ts, RH_ts)
+head(system2)
+
+```
+
+compare : 
+
+Rt_ts : Reproduction No
+RH_ts : Relative humadity 
+                
+```{r}               
+                
+system3 = cbind(Rt_ts, apple_driving_ts)
+head(system3)
+
+```
+
+
+
+```{r}
+system4 = cbind(Rt_ts, Google_workplace_ts)
+head(system4)
+
+```
+
+```{r}
+
+system5 = cbind(Rt_ts, Google_residential_ts)
+head(system5)
+
+```
+
+```{r}
+# lag selection using VAR technique
+lagselect1 = VARselect(system1, lag.max = 7, type = "const")
+lagselect1
+
+
+#lagselect1$selection
+
+lagselect1$selection #   
+as.factor(lagselect1$selection)
+summary(as.factor(lagselect1$selection))
+sort(summary(as.factor(lagselect1$selection)), decreasing=T)[1]
+names(sort(summary(as.factor(lagselect1$selection)), decreasing=T)[1])
+
+K_val1 =strtoi(names(sort(summary(as.factor(lagselect1$selection)), decreasing=T)[1]))-1
+K_val1
+
+
+
+# According to Johansen criteria
+if (K_val1<2){
+  K_val1=2
+  
+}
+
+
+```
+
+AIC : 
+# results for system2
+
+
+
+
+
+
+
+
+```{r}
+
+# lag = 7
+
+# time-point 100 days    before 100 days  then forecast  next 100 day data 
+
+lagselect2 = VARselect(system2, lag.max = 7, type = "const")
+#lagselect2$selection
+K_val2 =strtoi(names(sort(summary(as.factor(lagselect2$selection)), decreasing=T)[1]))-1
+
+if (K_val2<2){
+  K_val2=2
+}
+K_val2
+```
+
+
+# results for system3
+
+```{r}
+
+
+lagselect3 = VARselect(system3, lag.max = 7, type = "const")
+#lagselect3$selection
+K_val3 =strtoi(names(sort(summary(as.factor(lagselect3$selection)), decreasing=T)[1]))-1
+
+if (K_val3<2){
+  K_val3=2
+}
+
+K_val3
+
+```
+$selection
+AIC(n)  HQ(n)  SC(n) FPE(n) 
+     2      1      1      2 
+$criteria
+              1        2        3        4        5        6        7
+AIC(n) 1.128403 1.095402 1.104286 1.110670 1.139414 1.177879 1.172366
+HQ(n)  1.198310 1.217739 1.279053 1.337866 1.419041 1.509936 1.556853
+SC(n)  1.301920 1.399057 1.538079 1.674599 1.833481 2.002085 2.126709
+FPE(n) 3.090744 2.990532 3.017503 3.037346 3.126771 3.250677 3.234567
+
+> lagselect1$selection
+AIC(n)  HQ(n)  SC(n) FPE(n) 
+     2      1      1      2 
+
+> as.factor(lagselect1$selection)
+AIC(n)  HQ(n)  SC(n) FPE(n) 
+     7      7      1      7      
+Levels: 1 7
+> lagselect1$selection
+AIC(n)  HQ(n)  SC(n) FPE(n) 
+     2      1      1      2 
+> as.factor(lagselect1$selection)
+AIC(n)  HQ(n)  SC(n) FPE(n) 
+     2      1      1      2
+> sort(summary(as.factor(lagselect1$selection)), decreasing=T)[1]
+1 
+2 
+> names(sort(summary(as.factor(lagselect1$selection)), decreasing=T)[1])
+[1] "1"
+
+
+    
+```{r}
+
+lagselect4 = VARselect(system4, lag.max = 7, type = "const")
+#lagselect3$selection
+K_val4 =strtoi(names(sort(summary(as.factor(lagselect4$selection)), decreasing=T)[1]))-1
+
+if (K_val4<2){
+  K_val4=2
+}
+
+K_val4
+
+```
+
+
+```{r}
+
+lagselect5 = VARselect(system5, lag.max = 7, type = "const")
+#lagselect3$selection
+K_val5 =strtoi(names(sort(summary(as.factor(lagselect5$selection)), decreasing=T)[1]))-1
+
+if (K_val5<2){
+  K_val5=2
+}
+
+K_val5
+
+```
+
+
+```{r}
+
+
+# Johansen testing(trace)
+
+
+# Test 1
+
+test1 = ca.jo(system1, type='trace', ecdet = 'const', K=K_val1)
+print(summary(test1))
+
+
+```
+```{r}
+library(urca) 
+library(vars) 
+library(ggplot2)
+
+
+```
+# Calculate Linear Regression 
+```{r}
+
+yw = c()
+
+#w = Rt_ts - 0.2585501*air_temp_ts + 5.0689288
+
+for (i in  1:nrow(data_frame) ){
+  
+  #print(data_frame$air_temp_ts[i])
+  #print( data_frame$Rt_ts[i])
+  
+  yw[i] = data_frame$Rt[i] - 0.2585501*data_frame$air_temp[i] + 5.0689288
+ 
+  #print(yw) 
+}
+
+
+
+```
+
+
+
+```{r}
+
+ln =  lm(yw ~ data_frame$air_temp)
+plot(ln)
+
+cor.test(yw , data_frame$air_temp)
+```
+```{r}
+
+
+
+ln =  lm(yw ~ data_frame$Rt)
+plot(ln)
+
+
+cor.test(yw , data_frame$Rt)
+
+```
+```{r}
+
+
+
+
+ln =  lm(yw ~ data_frame$RH)
+plot(ln)
+
+
+
+cor.test(yw , data_frame$RH)
+
+
+
+```
+
+
+```{r}
+
+
+
+
+# Cointegration equation 
+
+w = Rt_ts - 0.2585501*air_temp_ts + 5.0689288
+
+
+
+xMat <- t(data.matrix(cbind(system1[c(48:248)])))
+beta <- data.matrix(test1@V[,1])
+wt <-   t(beta)%*% (xMat)
+wt
+t(wt)
+#wt = Y$Rs_ts - (0.2585501)*Y$air_temp_ts + 5.0689288
+plot(t(wt), type="l", main="Stationary Spread Series",
+     xlab="Time", ylab="Spread")
+wt_x = ts(wt)
+wtAdf <- ur.df(as.vector(t(wt)))
+wtAdf@cval
+#      1pct  5pct 10pct
+# tau1 -2.58 -1.95 -1.62
+wtAdf@teststat # fail to reject null of unit-root
+#                tau1
+# statistic -4.037032
+
+```
+```{r}
+# Test 2
+
+test2 = ca.jo(system2, type='trace', ecdet = 'const', K=K_val2)
+summary(test2)
+
+# Test 3
+
+test3 = ca.jo(system3, type='trace', ecdet = 'const', K=K_val3)
+summary(test3)
+
+# Test 4
+
+test4 = ca.jo(system4, type='trace', ecdet = 'const', K=K_val4)
+summary(test4)
+
+# Test 5 
+
+test5 = ca.jo(system5, type='trace', ecdet = 'const', K=K_val5)
+summary(test5)
+
+
+```
+
+# Discussion
+# Null hypothesis (r = 0) is rejected as 5 pct value (34.91) < test value (72.91). Thus at least one co-integration relationship exist between daily cases, Rt and air temperature.In the second hypothesis (r=1),value of 5 pct (19.96) < test value(23.92). Therefore there exist more than 2 co-integration relationship. Since in 3rd hypothesis, test value(4.76)< 5pct, existence of more than 3 co-integration relationship invalidated. Thus at most there are 2 co-integration relationship existed.
+# Since in 3rd hypothesis, test value (17.51) > 5pct (9.24), there are more than 3 co-integration relationship existed between daily cases, Rh and apple driving.
+# Since in 2nd hypothesis, test value (16.66) < 5pct (19.96), there are at most 1 co-integration relationship existed.
+
+
+
+
+```{r}
+
+# Johansen testing(MaxEigen)
+
+print("------Eigen value testing----")
+
+test1ei = ca.jo(system1, type='eigen', ecdet = 'const', K=K_val1)
+test2ei = ca.jo(system2, type='eigen', ecdet = 'const', K=K_val2)
+test3ei = ca.jo(system3, type='eigen', ecdet = 'const', K=K_val3)
+test4ei = ca.jo(system4, type='eigen', ecdet = 'const', K=K_val4)
+test5ei = ca.jo(system5, type='eigen', ecdet = 'const', K=K_val5)
+
+summary(test1ei)
+summary(test2ei)
+summary(test3ei)
+summary(test4ei)
+summary(test5ei)
+
+```
+
+> summary(test1ei)
+
+# Discussion
+# Null hypothesis (r = 0) is rejected as 5 pct value (22.00) < test value (48.99). Thus at least one co-integration relationship exist between daily cases, Rt and air temperature. In the second hypothesis (r=1),value of 5 pct (15.67) < test value(19.15). Therefore there exist more that 2 co-integration relationship. Since in 3rd hypothesis, test value (4.76) < 5pct(9.24), existence of more than 3 co-integration relationship invalidated. Thus there exist at most 2 co-integration relationship.
+# Only 1 co-integration relationship exist between daily cases, Rh and apple driving.
+# There are more than 3 co-integration relationship exist between daily cases, goggle workplace and goggle residential.
+
+
+
+
