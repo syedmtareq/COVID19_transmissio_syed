@@ -269,7 +269,7 @@ library(ggplot2)
 
 
 ```
-
+# Calculate Linear Regression 
 ```{r}
 
 yw = c()
