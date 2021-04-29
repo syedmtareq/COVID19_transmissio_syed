@@ -263,13 +263,84 @@ print(summary(test1))
 
 ```
 ```{r}
+library(urca) 
+library(vars) 
+library(ggplot2)
+
+
+```
+
+```{r}
+
+yw = c()
+
+#w = Rt_ts - 0.2585501*air_temp_ts + 5.0689288
+
+for (i in  1:nrow(data_frame) ){
+  
+  #print(data_frame$air_temp_ts[i])
+  #print( data_frame$Rt_ts[i])
+  
+  yw[i] = data_frame$Rt[i] - 0.2585501*data_frame$air_temp[i] + 5.0689288
+ 
+  #print(yw) 
+}
+
+
+
+```
+
+
+
+```{r}
+
+ln =  lm(yw ~ data_frame$air_temp)
+plot(ln)
+
+cor.test(yw , data_frame$air_temp)
+```
+```{r}
+
+
+
+ln =  lm(yw ~ data_frame$Rt)
+plot(ln)
+
+
+cor.test(yw , data_frame$Rt)
+
+```
+```{r}
+
+
+
+
+ln =  lm(yw ~ data_frame$RH)
+plot(ln)
+
+
+
+cor.test(yw , data_frame$RH)
+
+
+
+```
+
+
+```{r}
+
+
+
+
 # Cointegration equation 
 
 w = Rt_ts - 0.2585501*air_temp_ts + 5.0689288
 
+
+
 xMat <- t(data.matrix(cbind(system1[c(48:248)])))
 beta <- data.matrix(test1@V[,1])
-wt <- t(xMat) %*% t(beta)
+wt <-   t(beta)%*% (xMat)
 wt
 t(wt)
 #wt = Y$Rs_ts - (0.2585501)*Y$air_temp_ts + 5.0689288
