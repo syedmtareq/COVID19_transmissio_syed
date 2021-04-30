@@ -339,11 +339,13 @@ w = Rt_ts - 0.2585501*air_temp_ts + 5.0689288
 
 
 xMat <- t(data.matrix(cbind(system1[c(48:248)])))
+xMat
 beta <- data.matrix(test1@V[,1])
-wt <-   t(beta)%*% (xMat)
-wt
-t(wt)
+beta
+wt <- (beta) %*% (xMat)
+
 #wt = Y$Rs_ts - (0.2585501)*Y$air_temp_ts + 5.0689288
+
 plot(t(wt), type="l", main="Stationary Spread Series",
      xlab="Time", ylab="Spread")
 wt_x = ts(wt)
