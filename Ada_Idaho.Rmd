@@ -25,9 +25,9 @@ library(lmtest)
 
 # Loading the Dataset
 
-data_frame = read_csv("https://raw.githubusercontent.com/QinLab/COVID19_transmission_MS/main/county3RWM/Ada%2C%20Idaho%2C%20US.csv?token=APMEIZGLIXD6ZKG7YGAJQCLANZSNC")
+#data_frame = read_csv("https://raw.githubusercontent.com/QinLab/COVID19_transmission_MS/main/county3RWM/Ada%2C%20Idaho%2C%20US.csv?token=APMEIZGLIXD6ZKG7YGAJQCLANZSNC")
 
-# data_frame <- read_csv("Data_Covid.csv")
+data_frame <- read_csv("Data_Covid.csv")
 data_frame[is.na(data_frame)] = 0
 data_frame
 
@@ -258,27 +258,180 @@ K_val5
 # Test 1
 
 test1 = ca.jo(system1, type='trace', ecdet = 'const', K=K_val1)
-print(summary(test1))
+summary(test1)
+
+```
+
+
+```{r}
+
+library(urca) 
+library(vars) 
+library(ggplot2)
+
+
+# Cointegration equation 
+
+w = Rt_ts - 0.5585474*Google_residential_ts + 1.3090219
+plot(w, type="l")
+
+
+
+
+```
+
+
+
+```{r}
+
+
+library("tseries")
+adf.test(w)
+
+
+```
+
+
+
+```{r}
 
 # Test 2
 
 test2 = ca.jo(system2, type='trace', ecdet = 'const', K=K_val2)
 summary(test2)
 
+```
+
+
+```{r}
+
+# Cointegration equation 
+
+w = Rt_ts - 0.5585474*Google_residential_ts + 1.3090219
+plot(w, type="l")
+
+
+
+```
+
+
+```{r}
+
+
+library("tseries")
+adf.test(w)
+
+
+```
+
+
+```{r}
+
 # Test 3
 
 test3 = ca.jo(system3, type='trace', ecdet = 'const', K=K_val3)
 summary(test3)
+
+
+```
+
+
+
+```{r}
+
+# Cointegration equation 
+
+w = Rt_ts - 0.5585474*Google_residential_ts + 1.3090219
+plot(w, type="l")
+
+
+
+
+```
+
+
+
+```{r}
+
+library("tseries")
+adf.test(w)
+
+```
+
+
+
+
+```{r}
 
 # Test 4
 
 test4 = ca.jo(system4, type='trace', ecdet = 'const', K=K_val4)
 summary(test4)
 
+
+```
+
+
+
+```{r}
+
+# Cointegration equation 
+
+w = Rt_ts - 0.5585474*Google_residential_ts + 1.3090219
+plot(w, type="l")
+
+
+
+```
+
+
+
+
+```{r}
+
+library("tseries")
+adf.test(w)
+
+
+```
+
+
+
+```{r}
+
+
 # Test 5 
 
 test5 = ca.jo(system5, type='trace', ecdet = 'const', K=K_val5)
 summary(test5)
+
+
+
+```
+
+
+
+
+```{r}
+
+# Cointegration equation 
+
+w = Rt_ts - 0.5585474*Google_residential_ts + 1.3090219
+plot(w, type="l")
+
+
+
+
+```
+
+
+
+
+```{r}
+
+library("tseries")
+adf.test(w)
+
 
 
 ```
