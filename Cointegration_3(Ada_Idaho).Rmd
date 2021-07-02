@@ -25,9 +25,9 @@ library(lmtest)
 
 # Loading the Dataset
 
-#data_frame = read_csv("https://raw.githubusercontent.com/QinLab/COVID19_transmission_MS/main/county3RWM/Acadia%2C%20Louisiana%2C%20US.csv?token=APMEIZDYFM5QZG4AMN5DE4K72HT6O")
+data_frame = read_csv("https://raw.githubusercontent.com/QinLab/COVID19_transmission_MS/main/county3RWM/Ada%2C%20Idaho%2C%20US.csv?token=APMEIZBCR2ZB3H4USUJ4VFDAXEEEQ")
 
-data_frame <- read_csv("Accomack(Virginia).csv")
+#data_frame <- read_csv("Accomack(Virginia).csv")
 data_frame[is.na(data_frame)] = 0
 data_frame
 
@@ -54,25 +54,7 @@ Google_residential_ts = ts(data_frame$GoogleResidential, start = 1, end=248, fre
 
 ```
 
-
-Lag values 
-
-
-2 ~ 10    range of total lag Value
-7 ~ 10    range of lag value  K=  1/4 OF DATE 
-
-
-
-
 # Bind into a system
-
-
-compare : 
-
-Rt_ts : Reproduction No
-air_temp_ts : air temperature 
-RH_ts : Relative humadity
-
 
 ```{r}
 system1 = cbind(Rt_ts, air_temp_ts, RH_ts)
@@ -139,23 +121,14 @@ K_val1
 
 ```
 
-AIC : 
-HQ :
-SC:
-FPE:
-
-Lag :
-
-
 ```{r}
 
-# lag = 7
 
-# time-point 100 days    before 100 days  then forecast  next 100 day data 
-
-
+# results for system2
 
 lagselect2 = VARselect(system2, lag.max = 7, type = "const")
+lagselect2
+
 #lagselect2$selection
 K_val2 =strtoi(names(sort(summary(as.factor(lagselect2$selection)), decreasing=T)[1]))-1
 
@@ -172,6 +145,8 @@ K_val2
 
 
 lagselect3 = VARselect(system3, lag.max = 7, type = "const")
+lagselect3
+
 
 #lagselect3$selection
 
@@ -184,22 +159,7 @@ if (K_val3<2){
 K_val3
 
 ```
-$selection
-AIC(n)  HQ(n)  SC(n) FPE(n) 
-     2      1      1      2 
-$criteria
-              1        2        3        4        5        6        7
-AIC(n) 1.128403 1.095402 1.104286 1.110670 1.139414 1.177879 1.172366
-HQ(n)  1.198310 1.217739 1.279053 1.337866 1.419041 1.509936 1.556853
-SC(n)  1.301920 1.399057 1.538079 1.674599 1.833481 2.002085 2.126709
-FPE(n) 3.090744 2.990532 3.017503 3.037346 3.126771 3.250677 3.234567
 
-
-     
-     
-     
-     
-     
 ```{r}
 
 # Johansen testing(trace)
@@ -211,6 +171,15 @@ test1 = ca.jo(system1, type='trace', ecdet = 'const', K=K_val1)
 summary(test1)
 
 ```
+# Discussion
+
+# Null hypothesis (r = 0) is rejected as 5 pct value (34.91) < test value (75.85). Thus at least one co-integration relationship exist between Rt, air temperature and RH.
+
+#In the second hypothesis (r=1),value of 5 pct (19.96) < test value(23.48). Therefore there exist more than 2 co-integration relationship. 
+
+# Since in 3rd hypothesis (r=2), test value (4.86) < 5pct (9.24), there are at most 2 co-integration relationship existed.
+
+
 
 ```{r}
 
@@ -224,7 +193,7 @@ library(ggplot2)
 
 # Cointegration equation 
 
-w = Rt_ts - 0.006887345*air_temp_ts + 0.201365506*RH_ts - 14.177016165
+w = Rt_ts - 0.1543125*air_temp_ts - 0.1029878*RH_ts + 6.2295908
 plot(w, type="l")
 
 
@@ -252,6 +221,27 @@ summary(test2)
 
 
 ```
+# Discussion
+
+# Null hypothesis (r = 0) can not be rejected as 5 pct value (34.91) < test value (33.37). Thus is no co-integration relationship exist between Rt, Apple Driving Data and Google Workplace Data.
+
+```{r}
+
+# Cointegration equation 
+
+w = Rt_ts - 0.00492720*apple_driving_ts + 0.01703786*Google_workplace_ts + 0.29134803
+plot(w, type="l")
+
+
+```
+
+
+```{r}
+
+library("tseries")
+adf.test(w)
+
+```
 
 
 ```{r}
@@ -263,126 +253,31 @@ summary(test3)
 
 
 ```
+# Discussion
+
+# Null hypothesis (r = 0) is rejected as 5 pct value (19.96) < test value (20.79). Thus at least one co-integration relationship exist between Rt and Google Residential Data.
+
+# Since in 2nd hypothesis (r =1), test value (7.73) < 5pct (9.24), there are at most 1 co-integration relationship existed.
 
 
 ```{r}
+# Cointegration equation 
+
+w = Rt_ts - 0.04911784*Google_residential_ts - 0.62663204
+plot(w, type="l")
 
 
 ```
 
->summary(test1)
+```{r}
 
-###################### 
-# Johansen-Procedure # 
-###################### 
-
-Test type: trace statistic , without linear trend and constant in cointegration 
-
-Eigenvalues (lambda):
-[1] 1.805645e-01 7.491011e-02 1.917411e-02 5.531697e-18
-
-Values of teststatistic and critical values of test:
-
-          test 10pct  5pct  1pct
-r <= 2 |  4.76  7.52  9.24 12.97
-r <= 1 | 23.92 17.85 19.96 24.60
-r = 0  | 72.91 32.00 34.91 41.07
-
-Eigenvectors, normalised to first column:
-(These are the cointegration relations)
-
-                 dailyCases_ts.l2   Rt_ts.l2 air_temp_ts.l2    constant
-dailyCases_ts.l2         1.000000    1.00000       1.000000    1.000000
-Rt_ts.l2                 9.211152  -49.94739    -356.541761  828.080675
-air_temp_ts.l2          -3.110456   13.14016       4.914035   -3.021227
-constant                49.012173 -274.78631     282.399152 -164.033669
-
-Weights W:
-(This is the loading matrix)
-
-                dailyCases_ts.l2      Rt_ts.l2 air_temp_ts.l2      constant
-dailyCases_ts.d    -0.3925821122 -3.068507e-02  -4.581181e-03 -5.476077e-18
-Rt_ts.d            -0.0002729301 -4.053662e-05   3.553009e-05 -3.788555e-21
-air_temp_ts.d       0.0267354806 -7.791316e-03  -4.606410e-04  3.230168e-19
-
-> summary(test2)
-
-###################### 
-# Johansen-Procedure # 
-###################### 
-
-Test type: trace statistic , without linear trend and constant in cointegration 
-
-Eigenvalues (lambda):
-[1] 2.649299e-01 1.139255e-01 6.869784e-02 1.110223e-16
-
-Values of teststatistic and critical values of test:
-
-           test 10pct  5pct  1pct
-r <= 2 |  17.51  7.52  9.24 12.97
-r <= 1 |  47.26 17.85 19.96 24.60
-r = 0  | 122.98 32.00 34.91 41.07
-
-Eigenvectors, normalised to first column:
-(These are the cointegration relations)
-
-                    dailyCases_ts.l2     RH_ts.l2 apple_driving_ts.l2    constant
-dailyCases_ts.l2           1.0000000   1.00000000            1.000000    1.000000
-RH_ts.l2                  -8.9556211   0.18907898            6.123974    2.939054
-apple_driving_ts.l2        0.3847621  -0.09244073            3.778865    1.394470
-constant                 621.6903883 -12.39140162        -1103.827748 2208.110923
-
-Weights W:
-(This is the loading matrix)
-
-                   dailyCases_ts.l2    RH_ts.l2 apple_driving_ts.l2      constant
-dailyCases_ts.d         -0.03040052 -0.30292247        -0.006422801 -1.593734e-18
-RH_ts.d                  0.05456596 -0.01887693        -0.002105843  3.767369e-19
-apple_driving_ts.d      -0.09475738  0.24351208        -0.039664552 -1.121429e-17
-
-> summary(test3)
-
-###################### 
-# Johansen-Procedure # 
-###################### 
-
-Test type: trace statistic , without linear trend and constant in cointegration 
-
-Eigenvalues (lambda):
-[1] 9.792497e-02 4.007579e-02 2.756594e-02 4.163336e-17
-
-Values of teststatistic and critical values of test:
-
-          test 10pct  5pct  1pct
-r <= 2 |  6.76  7.52  9.24 12.97
-r <= 1 | 16.66 17.85 19.96 24.60
-r = 0  | 41.60 32.00 34.91 41.07
-
-Eigenvectors, normalised to first column:
-(These are the cointegration relations)
-
-                         dailyCases_ts.l6 Google_workplace_ts.l6 Google_residential_ts.l6    constant
-dailyCases_ts.l6                   1.0000               1.000000                 1.000000   1.0000000
-Google_workplace_ts.l6          -118.3593               1.463141                -0.188060  -2.3164169
-Google_residential_ts.l6        -317.5302              -5.856418                 1.804158  -0.6564643
-constant                       -1110.0112              43.927921               -25.694469 313.4928351
-
-Weights W:
-(This is the loading matrix)
-
-                        dailyCases_ts.l6 Google_workplace_ts.l6 Google_residential_ts.l6      constant
-dailyCases_ts.d            -0.0001196841            -0.05311015              -0.12600019  1.187801e-18
-Google_workplace_ts.d       0.0023961852            -0.03057509               0.01638121  6.280028e-19
-Google_residential_ts.d     0.0003040770             0.0225
-
-
-# Discussion
-# Null hypothesis (r = 0) is rejected as 5 pct value (34.91) < test value (72.91). Thus at least one co-integration relationship exist between daily cases, Rt and air temperature.In the second hypothesis (r=1),value of 5 pct (19.96) < test value(23.92). Therefore there exist more than 2 co-integration relationship. Since in 3rd hypothesis, test value(4.76)< 5pct, existence of more than 3 co-integration relationship invalidated. Thus at most there are 2 co-integration relationship existed.
-# Since in 3rd hypothesis, test value (17.51) > 5pct (9.24), there are more than 3 co-integration relationship existed between daily cases, Rh and apple driving.
-# Since in 2nd hypothesis, test value (16.66) < 5pct (19.96), there are at most 1 co-integration relationship existed.
+library("tseries")
+adf.test(w)
 
 
 
+
+```
 
 ```{r}
 
